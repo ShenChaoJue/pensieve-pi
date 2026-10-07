@@ -1,0 +1,6 @@
+{
+  "name": "pensieve-pi",
+  "version": "1.3.0",
+  "description": "Pensieve project knowledge base, ported to pi",
+  "private": true
+}

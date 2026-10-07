@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "required_dirs": ["maxims", "decisions", "knowledge", "pipelines"],
+  "optional_dirs": ["short-term"],
+  "short_term": { "default_ttl_days": 7 },
+  "critical_files": [
+    {
+      "target": "pipelines/run-when-reviewing-code.md",
+      "template": ".src/templates/pipelines/run-when-reviewing-code.md",
+      "compare_mode": "pipeline_context_links_ignored"
+    },
+    {
+      "target": "pipelines/run-when-committing.md",
+      "template": ".src/templates/pipelines/run-when-committing.md",
+      "compare_mode": "pipeline_context_links_ignored"
+    },
+    {
+      "target": "pipelines/run-when-refactoring.md",
+      "template": ".src/templates/pipelines/run-when-refactoring.md",
+      "compare_mode": "pipeline_context_links_ignored"
+    },
+    {
+      "target": "knowledge/taste-review/content.md",
+      "template": ".src/templates/knowledge/taste-review/content.md",
+      "compare_mode": "exact"
+    }
+  ],
+  "legacy_paths": {
+    "project": [".claude/skills/pensieve", ".agents/skills/pensieve", "skills/pensieve", ".claude/pensieve"],
+    "user": [".claude/pensieve"]
+  },
+  "legacy_graph_patterns": ["_pensieve-graph*.md", "pensieve-graph*.md", "graph*.md"],
+  "legacy_readme_regex": "(?i)^readme(?:.*\\.md)?$",
+  "memory": {
+    "start_marker": "<!-- pensieve:auto-memory:start -->",
+    "end_marker": "<!-- pensieve:auto-memory:end -->",
+    "guidance_line": "- Guidance: When a request involves knowledge retention, structural checks, version migration, or complex task decomposition, prefer invoking the `pensieve` skill."
+  },
+  "instructions": {
+    "start_marker": "<!-- pensieve:instructions:start -->",
+    "end_marker": "<!-- pensieve:instructions:end -->",
+    "required_files": ["AGENTS.md"],
+    "required_fragments": [
+      "## How To Use Pensieve",
+      "Use `.pensieve/` as the first source of architectural intent.",
+      "`maxims/` are active engineering rules.",
+      "`decisions/` are active project decisions.",
+      "`knowledge/` explains boundary maps and debugging paths.",
+      "`pipelines/` gives executable workflows.",
+      "Use these project pipelines directly when trigger words match; do not rediscover them through skills first.",
+      "use `.pensieve/pipelines/run-when-committing.md`",
+      "use `.pensieve/pipelines/run-when-refactoring.md`",
+      "use `.pensieve/pipelines/run-when-reviewing-code.md`"
+    ]
+  },
+  "doctor": {
+    "next_step": {
+      "migrate_categories": [
+        "missing_root",
+        "missing_directory",
+        "deprecated_path",
+        "missing_critical_file",
+        "critical_file_drift"
+      ],
+      "sync_instructions_categories": [
+        "missing_instruction_file",
+        "instruction_block_malformed",
+        "instruction_content_drift"
+      ],
+      "upgrade_categories": []
+    }
+  }
+}
