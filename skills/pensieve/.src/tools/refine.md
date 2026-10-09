@@ -1,5 +1,5 @@
 ---
-description: Refine the Pensieve knowledge base: review entries through a five-question decision process (triage), compress knowledge through abstraction and induction (compress).
+description: Refine the Pensieve knowledge base: review entries through a six-question decision process (triage), compress knowledge through abstraction and induction (compress).
 ---
 
 # Refine Tool
@@ -15,9 +15,9 @@ description: Refine the Pensieve knowledge base: review entries through a five-q
 
 ---
 
-## Subtask 1: Triage — Five-Question Decision Review
+## Subtask 1: Triage — Six-Question Decision Review
 
-Run the five-question decision on entries one by one. Applies to short-term due items, specified entries, or full-library review.
+Run the six-question decision on entries one by one. Applies to short-term due items, specified entries, or full-library review.
 
 ### Scope
 
@@ -26,8 +26,9 @@ Run the five-question decision on entries one by one. Applies to short-term due 
 | Short-term due | Entries under `short-term/` where `created + 7 days < today` (skip entries with `seed` in tags) |
 | Specified entries | Files specified by the user |
 | Full library | `maxims/` + `decisions/` + `knowledge/` + `pipelines/` + `short-term/` |
+| Global library | `~/.pensieve/`: `maxims/` + `knowledge/` + `pipelines/` + `short-term/` |
 
-### Five-Question Decision
+### Six-Question Decision
 
 Answer sequentially; stop when a termination condition is met.
 
@@ -37,9 +38,12 @@ Answer sequentially; stop when a termination condition is met.
 | Q2 | Is it backed by evidence (code, documentation, experiment results)? | **DELETE** | Q3 |
 | Q3 | Is it already covered by an existing entry? | Q4 | **DELETE** (merge into existing entry) |
 | Q4 | Is the context at the time of writing still valid? | **DELETE** | Q5 |
-| Q5 | Does it meet the content specification of the target layer? | Fill gaps or **DELETE** | **KEEP/PROMOTE** |
+| Q5 | Does this entry hold in a second project (cross-project recurrence confirmed)? | Keep at project scope, then Q6 | With evidence, mark for global promotion, then Q6 |
+| Q6 | Does it meet the content specification of the target layer? | Fill gaps or **DELETE** | **KEEP/PROMOTE** |
 
-Q5 specification files:
+`decision` entries always remain at project scope because the global root has no `decisions/` layer.
+
+Q6 specification files:
 
 | type | Specification |
 |---|---|
@@ -50,7 +54,8 @@ Q5 specification files:
 
 ### Execution
 
-- **PROMOTE** (short-term entries): `mv short-term/{type}/file.md {type}/file.md`, change status to `active`
+- **PROMOTE** (short-term entries): `mv short-term/{type}/file.md {type}/file.md` within the current root, change status to `active`
+- **PROMOTE** (cross-root after Q5 confirms recurrence; `maxims`, `knowledge`, or `pipelines` only): `mv <project>/.pensieve/{type}/x.md ~/.pensieve/{type}/x.md`, change frontmatter to `scope: global`, then delete any duplicate project-layer entries or reduce them to a one-line `[[global:{type}/x]]` pointer followed by project-specific deltas
 - **KEEP** (long-term entries): No action needed
 - **Fill gaps**: Fill in missing content per specification, then KEEP/PROMOTE
 - **DELETE**: Delete the file. If Q3 determines duplication, merge valuable content into the existing entry before deleting
@@ -60,6 +65,8 @@ Q5 specification files:
 ## Subtask 2: Compress — Compress the Knowledge Base
 
 Review all entries from a holistic perspective, **reducing total entry count while increasing information density** through abstraction and induction.
+
+Similar entries repeated independently across projects are global candidates; handle them according to the evidence rule in `.src/references/scope.md`.
 
 ### Three Compression Techniques
 
@@ -92,7 +99,7 @@ From a holistic perspective, discover that seemingly different entries are actua
 4. For each compression plan:
    - Describe the entries involved and the compression technique
    - Write the new entry (per target layer specification, via short-term)
-   - Run the five-question Q1-Q3 on replaced old entries, delete after confirming they can be removed
+   - Run the six-question Q1-Q3 on replaced old entries, delete after confirming they can be removed
    - Preserve `[[...]]` link connectivity
 
 ---

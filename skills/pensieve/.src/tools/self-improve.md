@@ -11,12 +11,23 @@ description: Extract reusable conclusions from conversations, diffs, and review 
 - A task round ends with clear reusable conclusions
 - Repeatedly extractable patterns emerge during review
 
+## Scope decision
+
+Before writing, run S1/S2 in `.src/references/scope.md`. Evidence from one project stays in the project root by default and may use the `scope-candidate` tag. Write to the global root only after cross-project recurrence, when seeding from `.src/templates/`, or when the user explicitly requests global scope.
+
 ## Write targets
 
 ### New files -> Write to short-term by default
 
+| Scope | Target |
+|---|---|
+| project | `<project>/.pensieve/short-term/{type}/...` |
+| global | `~/.pensieve/short-term/{type}/...` |
+
+Use the same naming rules in both roots:
+
 - `maxim` → `short-term/maxims/{one-sentence-conclusion}.md`
-- `decision` → `short-term/decisions/{date}-{conclusion}.md`
+- `decision` → `short-term/decisions/{date}-{conclusion}.md` (project only)
 - `pipeline` → `short-term/pipelines/run-when-*.md`
 - `knowledge` → `short-term/knowledge/{name}/content.md`
 
@@ -24,12 +35,13 @@ Naming conventions match the corresponding long-term directories. `[[...]]` link
 
 ### Modifying existing files -> Edit in place
 
-Files already in `maxims/decisions/knowledge/pipelines` are edited directly in place, not via short-term.
+Files already in `maxims/decisions/knowledge/pipelines` are edited directly in place within the root that already holds the entry, not via short-term.
 
 ### Exception: When the user explicitly requests writing directly to long-term directories, short-term can be skipped.
 
 Read before writing:
 
+- `.src/references/scope.md`
 - `.src/references/maxims.md`
 - `.src/references/decisions.md`
 - `.src/references/pipelines.md`

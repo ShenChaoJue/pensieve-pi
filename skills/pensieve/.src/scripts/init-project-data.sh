@@ -12,6 +12,36 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib.sh"
 
+usage() {
+  cat <<'USAGE'
+Usage:
+  init-project-data.sh [--global]
+
+Options:
+  --global    Initialize the global Pensieve root instead of project data
+  -h, --help  Show help
+USAGE
+}
+
+GLOBAL_MODE=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --global)
+      GLOBAL_MODE=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
 is_readme_file() {
   case "$(basename "$1")" in
     [Rr][Ee][Aa][Dd][Mm][Ee]|[Rr][Ee][Aa][Dd][Mm][Ee].md)
@@ -23,6 +53,55 @@ is_readme_file() {
   esac
 }
 
+SKILL_ROOT="$(skill_root_from_script "$SCRIPT_DIR")"
+TEMPLATES_ROOT="$SKILL_ROOT/.src/templates"
+
+seed_global_template() {
+  local source_file="$1"
+  local target_file="$2"
+  [[ ! -f "$target_file" ]] || return 0
+  awk '
+    /^type:[[:space:]]*/ { print; print "scope: global"; next }
+    /^tags:[[:space:]]*\[/ {
+      sub(/][[:space:]]*$/, ", seed]")
+    }
+    { print }
+  ' "$source_file" > "$target_file"
+}
+
+if [[ "$GLOBAL_MODE" -eq 1 ]]; then
+  DATA_ROOT="$(global_root)"
+  mkdir -p "$DATA_ROOT"/{maxims,knowledge,pipelines}
+  mkdir -p "$DATA_ROOT"/short-term/{maxims,knowledge,pipelines}
+  STATE_ROOT="$(ensure_state_dir "$DATA_ROOT/.state")"
+
+  PENSIEVE_GITIGNORE="$DATA_ROOT/.gitignore"
+  if [[ ! -f "$PENSIEVE_GITIGNORE" ]]; then
+    cat > "$PENSIEVE_GITIGNORE" <<'EOF'
+# Runtime state (reports, markers, caches, graph snapshots)
+.state/
+EOF
+  fi
+
+  for category in maxims pipelines; do
+    template_dir="$TEMPLATES_ROOT/$category"
+    [[ -d "$template_dir" ]] || continue
+    for template_file in "$template_dir"/*.md; do
+      [[ -f "$template_file" ]] || continue
+      is_readme_file "$template_file" && continue
+      seed_global_template "$template_file" "$DATA_ROOT/$category/$(basename "$template_file")"
+    done
+  done
+
+  MAXIM_COUNT="$(find "$DATA_ROOT/maxims" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
+  PIPELINE_COUNT="$(find "$DATA_ROOT/pipelines" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')"
+  echo "✅ Global initialization complete: $DATA_ROOT"
+  echo "  - maxims/*.md: $MAXIM_COUNT files present"
+  echo "  - pipelines/*.md: $PIPELINE_COUNT files present"
+  echo "  - runtime state: $STATE_ROOT"
+  exit 0
+fi
+
 # Guard against running from outside a real project directory.
 _PROJECT_ROOT="$(project_root)"
 validate_project_root "$_PROJECT_ROOT" || exit 1
@@ -30,8 +109,6 @@ validate_project_root "$_PROJECT_ROOT" || exit 1
 DATA_ROOT="$(user_data_root)"
 STATE_ROOT="$(ensure_state_dir "$(state_root)")"
 
-SKILL_ROOT="$(skill_root_from_script "$SCRIPT_DIR")"
-TEMPLATES_ROOT="$SKILL_ROOT/.src/templates"
 SYSTEM_KNOWLEDGE_ROOT="$SKILL_ROOT/.src/templates/knowledge"
 PROJECT_STATE_SCRIPT="$SKILL_ROOT/.src/scripts/maintain-project-state.sh"
 

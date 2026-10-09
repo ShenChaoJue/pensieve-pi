@@ -70,8 +70,10 @@ STATE_ROOT="$(to_posix_path "$STATE_ROOT")"
 SKILL_VERSION="$(skill_version "$SCRIPT_DIR")"
 MARKER_FILE="$STATE_ROOT/pensieve-session-marker.json"
 NOW_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+GLOBAL_ROOT="$(global_root)"
+SCHEMA_FILE="$SKILL_ROOT/.src/core/schema.json"
 
-"$PYTHON_BIN" - "$MODE" "$EVENT" "$MARKER_FILE" "$SKILL_VERSION" "$PROJECT_ROOT" "$NOW_UTC" "$SKILL_ROOT" <<'PY'
+"$PYTHON_BIN" - "$MODE" "$EVENT" "$MARKER_FILE" "$SKILL_VERSION" "$PROJECT_ROOT" "$NOW_UTC" "$SKILL_ROOT" "$GLOBAL_ROOT" "$SCHEMA_FILE" <<'PY'
 from __future__ import annotations
 
 import json
@@ -88,6 +90,8 @@ skill_version = sys.argv[4].strip()
 project_root = sys.argv[5].strip()
 now_utc = sys.argv[6].strip()
 skill_root = sys.argv[7].strip()
+global_root = Path(sys.argv[8])
+schema_file = Path(sys.argv[9])
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -96,6 +100,62 @@ def load_json(path: Path) -> dict[str, Any]:
     except Exception:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def entry_title(path: Path) -> str:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if text.startswith("---\n"):
+        end = text.find("\n---", 4)
+        if end >= 0:
+            for line in text[4:end].splitlines():
+                if line.startswith("title:"):
+                    value = line.split(":", 1)[1].strip().strip('"').strip("'")
+                    if value:
+                        return value
+    for line in text.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return path.stem
+
+
+def global_context() -> str:
+    if not global_root.is_dir():
+        return ""
+    schema = load_json(schema_file)
+    global_cfg = schema.get("global_root") if isinstance(schema.get("global_root"), dict) else {}
+    caps = global_cfg.get("entry_caps") if isinstance(global_cfg.get("entry_caps"), dict) else {}
+
+    def titles(category: str) -> list[str]:
+        cap = caps.get(category, 0)
+        limit = int(cap) if isinstance(cap, int) and cap >= 0 else 0
+        category_root = global_root / category
+        if not category_root.is_dir():
+            return []
+        if category == "knowledge":
+            paths = sorted(path for path in category_root.rglob("*.md") if path.is_file())
+        else:
+            paths = sorted(path for path in category_root.glob("*.md") if path.is_file())
+        return [entry_title(path) for path in paths[:limit]]
+
+    lines = ["Global maxims:"]
+    maxims = titles("maxims")
+    lines.extend(f"- {title}" for title in maxims)
+    if not maxims:
+        lines.append("- (none)")
+    lines.append("")
+    lines.append("Global index:")
+    pipelines = titles("pipelines")
+    knowledge = titles("knowledge")
+    lines.extend(f"- Pipeline: {title}" for title in pipelines)
+    lines.extend(f"- Knowledge: {title}" for title in knowledge)
+    if not pipelines and not knowledge:
+        lines.append("- (none)")
+    return "\n".join(lines)
+
+
+def prepend_global_context(context: str) -> str:
+    block = global_context()
+    return f"{block}\n\n{context}" if block else context
 
 
 def normalize_event(value: str) -> str:
@@ -249,7 +309,7 @@ if initialized and self_check_ok:
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": ctx,
+            "additionalContext": prepend_global_context(ctx),
         },
     }
     if _st_due > 0:
@@ -294,7 +354,7 @@ user_summary = f"Pensieve ({skill_version}): {', '.join(user_parts)}. Run /pensi
 payload = {
     "hookSpecificOutput": {
         "hookEventName": "SessionStart",
-        "additionalContext": "\n".join(messages),
+        "additionalContext": prepend_global_context("\n".join(messages)),
     },
     "systemMessage": user_summary,
 }

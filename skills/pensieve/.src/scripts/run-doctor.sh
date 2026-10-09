@@ -142,7 +142,8 @@ ensure_python_env
 [[ -n "${PYTHON_BIN:-}" ]] || { echo "Python not found" >&2; exit 1; }
 
 CHECK_TIME="$(date '+%Y-%m-%d %H:%M:%S')"
-"$PYTHON_BIN" "$DOCTOR_ENGINE" "$SCAN_OUTPUT" "$FRONTMATTER_OUTPUT" "$GRAPH_OUTPUT" "$REPORT" "$SUMMARY_JSON" "$PROJECT_ROOT" "$ROOT" "$CHECK_TIME" "$SCHEMA_FILE"
+GLOBAL_ROOT="$(global_root)"
+"$PYTHON_BIN" "$DOCTOR_ENGINE" "$SCAN_OUTPUT" "$FRONTMATTER_OUTPUT" "$GRAPH_OUTPUT" "$REPORT" "$SUMMARY_JSON" "$PROJECT_ROOT" "$ROOT" "$CHECK_TIME" "$SCHEMA_FILE" "$GLOBAL_ROOT"
 
 SUMMARY_STATUS="$(json_get_value "$SUMMARY_JSON" "status" "UNKNOWN")"
 SUMMARY_MUST_FIX="$(json_get_value "$SUMMARY_JSON" "must_fix" "0")"

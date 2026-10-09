@@ -70,12 +70,30 @@ while IFS= read -r file; do
     files+=("$file")
 done < <(find "$ROOT" -type f -name '*.md' | LC_ALL=C sort)
 
+GLOBAL_ROOT="$(global_root)"
+INCLUDE_GLOBAL=0
+if [[ -d "$GLOBAL_ROOT" && "$ROOT" != "$GLOBAL_ROOT" ]]; then
+    INCLUDE_GLOBAL=1
+    while IFS= read -r file; do
+        files+=("$file")
+    done < <(find \
+        "$GLOBAL_ROOT"/maxims \
+        "$GLOBAL_ROOT"/knowledge \
+        "$GLOBAL_ROOT"/pipelines \
+        "$GLOBAL_ROOT"/short-term/maxims \
+        "$GLOBAL_ROOT"/short-term/knowledge \
+        "$GLOBAL_ROOT"/short-term/pipelines \
+        -type f -name '*.md' 2>/dev/null | LC_ALL=C sort)
+fi
+
 # Compute TTL cutoff date for short-term items (today - 7 days)
 TTL_CUTOFF="$(date -u -v-7d +"%Y-%m-%d" 2>/dev/null || date -u -d "7 days ago" +"%Y-%m-%d" 2>/dev/null || echo "")"
 
 run_awk() {
 awk \
     -v root="$ROOT" \
+    -v global_root="$GLOBAL_ROOT" \
+    -v include_global="$INCLUDE_GLOBAL" \
     -v output="$OUTPUT" \
     -v ttl_cutoff="$TTL_CUTOFF" '
 function trim(s) {
@@ -129,12 +147,19 @@ BEGIN {
     cats[3] = "decisions"; cat_title["decisions"] = "Decisions"
     cats[4] = "knowledge"; cat_title["knowledge"] = "Knowledge"
     cats[5] = "pipelines"; cat_title["pipelines"] = "Pipelines"
+    cats[6] = "global";    cat_title["global"] = "Global"
 }
 {
     if (FNR == 1) {
         file_allowed = 0
         st_pending = 0
         st_in_fm = 0
+        if (include_global && index(FILENAME, global_root "/") == 1) {
+            current_rel = relpath(FILENAME, global_root)
+            current_rel = "global:" strip_short_term(current_rel)
+            add_member("global", current_rel)
+            next
+        }
         if (FILENAME == output) {
             next
         }
@@ -232,7 +257,7 @@ END {
     print "```mermaid"
     print "graph LR"
 
-    for (ci = 1; ci <= 5; ci++) {
+    for (ci = 1; ci <= 6; ci++) {
         cat = cats[ci]
         if (!(cat in member_list) || member_list[cat] == "") continue
 

@@ -72,6 +72,7 @@ fmt = sys.argv[2]
 
 allowed_types = {"maxim", "decision", "knowledge", "pipeline"}
 allowed_status = {"draft", "active", "archived"}
+allowed_scopes = {"project", "global"}
 required_keys = ["id", "type", "title", "status", "created", "updated", "tags"]
 id_re = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 date_re = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -293,6 +294,10 @@ for p in files:
     v_status = fm.get("status")
     if isinstance(v_status, str) and v_status and v_status not in allowed_status:
         issues.append(Issue("MUST_FIX", "FM-202", rel, f"Invalid status: {v_status} (allowed: {', '.join(sorted(allowed_status))})"))
+
+    v_scope = fm.get("scope", "project")
+    if not isinstance(v_scope, str) or v_scope not in allowed_scopes:
+        issues.append(Issue("MUST_FIX", "FM-206", rel, f"Invalid scope: {v_scope} (allowed: {', '.join(sorted(allowed_scopes))})"))
 
     v_id = fm.get("id")
     if isinstance(v_id, str) and v_id and not id_re.match(v_id):

@@ -3,6 +3,15 @@
   "required_dirs": ["maxims", "decisions", "knowledge", "pipelines"],
   "optional_dirs": ["short-term"],
   "short_term": { "default_ttl_days": 7 },
+  "global_root": {
+    "default_path": "~/.pensieve",
+    "env_override": "PENSIEVE_GLOBAL_ROOT",
+    "required_dirs": ["maxims", "knowledge", "pipelines"],
+    "optional_dirs": ["short-term"],
+    "short_term": { "default_ttl_days": 7 },
+    "entry_caps": { "maxims": 20, "knowledge": 30, "pipelines": 20 },
+    "frontmatter": { "scope_enum": ["project", "global"], "scope_default": "project" }
+  },
   "critical_files": [
     {
       "target": "pipelines/run-when-reviewing-code.md",
@@ -52,6 +61,12 @@
       "use `.pensieve/pipelines/run-when-refactoring.md`",
       "use `.pensieve/pipelines/run-when-reviewing-code.md`"
     ]
+  },
+  "global_instructions": {
+    "target": "~/.pi/agent/AGENTS.md",
+    "env_override": "PENSIEVE_GLOBAL_INSTRUCTIONS_FILE",
+    "start_marker": "<!-- pensieve:global-instructions:start -->",
+    "end_marker": "<!-- pensieve:global-instructions:end -->"
   },
   "doctor": {
     "next_step": {

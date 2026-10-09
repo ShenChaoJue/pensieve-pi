@@ -108,6 +108,24 @@ system_root() {
     echo "$sr/.src"
 }
 
+global_root() {
+    local configured="${PENSIEVE_GLOBAL_ROOT:-}"
+    if [[ -n "$configured" ]]; then
+        configured="$(to_posix_path "$configured")"
+        if [[ "$configured" == /* ]]; then
+            if [[ "$configured" != "/" ]]; then
+                configured="${configured%/}"
+            fi
+            echo "$configured"
+            return 0
+        fi
+    fi
+
+    local home_dir
+    home_dir="$(resolve_home)" || { echo "global_root: cannot resolve home" >&2; return 1; }
+    to_posix_path "$home_dir/.pensieve"
+}
+
 state_root() {
     local caller="${1:-$(pwd)}"
     if [[ -n "${PENSIEVE_STATE_ROOT:-}" ]]; then

@@ -29,4 +29,6 @@ Doctor only maintains:
 
 Doctor reports missing or drifted `AGENTS.md` Pensieve short routes as MUST_FIX, but it does not modify them automatically. Use `sync-instructions` to fix them.
 
+When the global root exists, Doctor also consumes `schema.json`'s `global_root` contract: it checks required directories, reports hard entry-cap overflow, and counts project entries tagged `scope-candidate` as promotion hints. If the global root does not exist, Doctor emits no global findings.
+
 It does not modify business code.

@@ -1,11 +1,12 @@
 # Directory Layout
 
-Pensieve v2 separates system code (user-level) from project data (project-level).
+Pensieve v2 separates system code from project-level and global user data.
 
-## Two anchor points
+## Three anchor points
 
 - **Skill root** (the directory containing `SKILL.md`): pi-installed system files, tracked by the package
-- **Project data** (`<project>/.pensieve/`): independent per project, can be version-controlled
+- **Project data root** (`<project>/.pensieve/`): independent per project, can be version-controlled
+- **Global data root** (`~/.pensieve/`, overridden by `PENSIEVE_GLOBAL_ROOT`): user-maintained data shared across projects
 
 ## Layout
 
@@ -36,11 +37,23 @@ Pensieve v2 separates system code (user-level) from project data (project-level)
 ├── state.md                        #   Dynamic: lifecycle state + knowledge graph (generated)
 ├── .gitignore                      #   Only ignores .state/
 └── .state/                         #   Runtime artifacts (gitignored)
+
+~/.pensieve/                        # Global user data (override with PENSIEVE_GLOBAL_ROOT)
+├── maxims/                         #   Shared engineering maxims (long-term)
+├── knowledge/                      #   Shared facts (long-term)
+├── pipelines/                      #   Shared reusable workflows (long-term)
+├── short-term/                     #   Staging area (mirrors global long-term structure)
+│   ├── maxims/
+│   ├── knowledge/
+│   └── pipelines/
+└── .state/                         #   Runtime artifacts (gitignored by convention)
 ```
 
 ## Notes
 
 - `.src/` and `SKILL.md` are tracked system files updated with the pi package
+- The global data root is maintained by the user at `~/.pensieve/` by default; `PENSIEVE_GLOBAL_ROOT` overrides that path
+- The global root has no `decisions/` and enforces entry caps of 20 `maxims`, 30 `knowledge` entries, and 20 `pipelines`
 - Default content seeded into user projects lives under `.src/templates/`
 - `SKILL.md` is a **static, tracked** file: the skill interface declaration; scripts do not generate it
 - `state.md` is a **dynamic, generated** file at `<project>/.pensieve/state.md`, refreshed by `init/doctor/migrate/upgrade/self-improve/sync`

@@ -1,5 +1,5 @@
 ---
-description: Initialize the current project's .pensieve/ user data directory and provision seed files. Performs baseline exploration and code review, producing candidates for persistence. Idempotent; does not overwrite existing user data.
+description: Initialize project or global Pensieve user data and provision seed files. Project mode performs baseline exploration and code review, producing candidates for persistence. Idempotent; does not overwrite existing user data.
 ---
 
 # Init Tool
@@ -12,6 +12,7 @@ description: Initialize the current project's .pensieve/ user data directory and
 - User needs post-install initialization or post-reinstall default structure provisioning
 - Missing base directories: `<project>/.pensieve/{maxims,decisions,knowledge,pipelines}`
 - Missing default pipeline or taste-review knowledge
+- Initializing the shared global root (`~/.pensieve/` or `PENSIEVE_GLOBAL_ROOT`)
 
 If the user first asks "how to install/reinstall Pensieve", read `.src/references/skill-lifecycle.md` first, then run this tool.
 
@@ -30,7 +31,15 @@ Default pipeline seeds come from `.src/templates/pipelines/run-when-*.md`; do no
 bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/init-project-data.sh"
 ```
 
-Then:
+To initialize only the global root, without touching project data:
+
+```bash
+bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/init-project-data.sh" --global
+```
+
+Global initialization creates `maxims/`, `knowledge/`, `pipelines/`, their `short-term/` mirrors, and `.state/`; it seeds all maxim and pipeline templates with `scope: global` and the `seed` tag. It does not create `decisions/` or seed knowledge, and it never overwrites existing files.
+
+Then, for project initialization:
 
 1. Read `<project>/.pensieve/pipelines/run-when-reviewing-code.md`
 2. Explore based on recent commits and hot files

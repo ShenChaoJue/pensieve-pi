@@ -229,9 +229,9 @@ def _build_report(
 
 
 def run(argv: list[str]) -> int:
-    if len(argv) != 9:
+    if len(argv) != 10:
         raise SystemExit(
-            "usage: doctor_engine.py <scan-json> <frontmatter-json> <graph-md> <report-md> <summary-json> <project-root> <data-root> <check-time> <schema-json>"
+            "usage: doctor_engine.py <scan-json> <frontmatter-json> <graph-md> <report-md> <summary-json> <project-root> <data-root> <check-time> <schema-json> <global-root>"
         )
 
     scan_file = Path(argv[0])
@@ -243,6 +243,7 @@ def run(argv: list[str]) -> int:
     user_root = argv[6]
     check_time = argv[7]
     schema_file = Path(argv[8])
+    global_root = Path(argv[9])
 
     scan = _load_json(scan_file)
     frontmatter = _load_json(frontmatter_file)
@@ -296,6 +297,84 @@ def run(argv: list[str]) -> int:
                 recommendation="Create the target file or fix the link target name",
             )
         )
+
+    global_cfg = schema.get("global_root") if isinstance(schema.get("global_root"), dict) else {}
+    if global_root.is_dir():
+        required_dirs = [str(item) for item in global_cfg.get("required_dirs", []) if isinstance(item, str)]
+        for idx, directory in enumerate(required_dirs, start=1):
+            target = global_root / directory
+            if not target.is_dir():
+                findings.append(
+                    Finding(
+                        finding_id=f"GLOBAL-DIR-{idx:03d}",
+                        severity="MUST_FIX",
+                        category="global_missing_directory",
+                        path=str(target),
+                        rule_source=".src/core/schema.json#global_root.required_dirs",
+                        message=f"Global root is missing required directory: {directory}/",
+                        recommendation="Run init --global to restore the global directory structure",
+                    )
+                )
+
+        entry_caps = global_cfg.get("entry_caps") if isinstance(global_cfg.get("entry_caps"), dict) else {}
+        cap_idx = 0
+        for category, raw_cap in entry_caps.items():
+            if not isinstance(category, str) or not isinstance(raw_cap, int):
+                continue
+            category_dir = global_root / category
+            count = sum(1 for path in category_dir.rglob("*.md") if path.is_file()) if category_dir.is_dir() else 0
+            if count > raw_cap:
+                cap_idx += 1
+                findings.append(
+                    Finding(
+                        finding_id=f"GLOBAL-CAP-{cap_idx:03d}",
+                        severity="MUST_FIX",
+                        category="global_entry_cap",
+                        path=str(category_dir),
+                        rule_source=".src/core/schema.json#global_root.entry_caps",
+                        message=f"Global {category} entry cap exceeded: {count}/{raw_cap}",
+                        recommendation="Run refine to compress, merge, archive, or demote entries before adding more",
+                    )
+                )
+
+        project_data_root = Path(project_root) / ".pensieve"
+        if project_data_root.is_dir() and project_data_root.resolve() != global_root.resolve():
+            candidate_count = 0
+            for md_file in project_data_root.rglob("*.md"):
+                if not md_file.is_file() or ".state" in md_file.parts:
+                    continue
+                text = md_file.read_text(encoding="utf-8", errors="replace")[:4096]
+                fm_end = text.find("\n---", 4) if text.startswith("---") else -1
+                if fm_end < 0:
+                    continue
+                fm_lines = text[4:fm_end].splitlines()
+                tag_values: list[str] = []
+                reading_tags = False
+                for line in fm_lines:
+                    if line.startswith("tags:"):
+                        reading_tags = True
+                        tag_values.append(line.split(":", 1)[1])
+                        continue
+                    if reading_tags and (line.startswith((" ", "\t")) or line.lstrip().startswith("- ")):
+                        tag_values.append(line)
+                        continue
+                    if reading_tags:
+                        break
+                tags = set(re.findall(r"[A-Za-z0-9_-]+", " ".join(tag_values)))
+                if "scope-candidate" in tags:
+                    candidate_count += 1
+            if candidate_count:
+                findings.append(
+                    Finding(
+                        finding_id="GLOBAL-PROMOTE-001",
+                        severity="INFO",
+                        category="global_promotion_hint",
+                        path=str(project_data_root),
+                        rule_source=".src/references/scope.md",
+                        message=f"Project entries tagged scope-candidate: {candidate_count}; review for global promotion after cross-project recurrence",
+                        recommendation="Run refine and confirm the conclusion holds in a second project before promoting it",
+                    )
+                )
 
     # Check for short-term items due for refine
     short_term_dir = Path(user_root) / "short-term"
