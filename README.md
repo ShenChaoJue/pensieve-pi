@@ -1,5 +1,7 @@
 # pensieve-pi
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 A pi package containing the Pensieve project knowledge-base skill. Ported from [kingkongshot/Pensieve](https://github.com/kingkongshot/Pensieve) v1.3.0, licensed under MIT.
 
 ## Package layout
