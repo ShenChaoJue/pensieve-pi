@@ -57,6 +57,21 @@ Pensieve 还支持位于 `~/.pensieve/` 的共享数据根目录。可通过设�
 └── .state/              # 运行时产物
 ```
 
+**显式启用。** 全局根目录不会自动创建：`pi install` 不会创建该目录，也不会在 `$HOME` 下写入任何内容。
+安装后，使用以下幂等命令手动初始化一次；`PENSIEVE_SKILL_ROOT` 指向已安装的 `pensieve` skill 目录：
+
+```bash
+bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/init-project-data.sh" --global
+```
+
+可选运行以下命令，启用 `~/.pi/agent/AGENTS.md` 注入通道：
+
+```bash
+bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/sync-instructions.sh" --global
+```
+
+如果全局根目录不存在或被删除，Pensieve 会静默降级为纯项目级行为，不会报错。
+
 项目根目录存储差异，全局根目录存储共性。全局数据没有 `decisions/` 层，因为架构权衡仍然与作出该决策的项目绑定。
 
 写入条目前，Pensieve 会提出两个作用域问题：S1 询问条目是否引用了与仓库绑定的上下文；如果没有，S2 询问它在另一个项目中是否仍然成立。仅来自一个项目的证据保留在项目作用域，并可能获得 `scope-candidate` 标签。在两个或更多项目中重复出现的内容可通过 `refine` 提升。项目条目使用 `[[global:maxims/example]]` 形式的链接指向共享条目，每个条目都可在其 frontmatter 中声明 `scope: project | global`。

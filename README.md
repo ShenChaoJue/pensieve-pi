@@ -57,6 +57,21 @@ Pensieve also supports a shared data root at `~/.pensieve/`. Set `PENSIEVE_GLOBA
 └── .state/              # Runtime artifacts
 ```
 
+**Opt-in.** The global root is never created automatically: `pi install` does not create it or write anything under `$HOME`.
+After installation, initialize it once with the following idempotent command; `PENSIEVE_SKILL_ROOT` points to the installed `pensieve` skill directory:
+
+```bash
+bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/init-project-data.sh" --global
+```
+
+Optionally enable the `~/.pi/agent/AGENTS.md` injection channel with:
+
+```bash
+bash "${PENSIEVE_SKILL_ROOT}/.src/scripts/sync-instructions.sh" --global
+```
+
+If the global root is absent or deleted, Pensieve silently falls back to project-only behavior without errors.
+
 The project root stores differences; the global root stores commonalities. Global data has no `decisions/` layer because architecture trade-offs remain bound to the project that made them.
 
 Before writing an entry, Pensieve applies two scope questions: S1 asks whether it references repository-bound context; if not, S2 asks whether it still holds in another project. Evidence from only one project stays at project scope and may receive the `scope-candidate` tag. Recurrence in two or more projects can be promoted by `refine`. Project entries link to shared entries with `[[global:maxims/example]]`-style links, and every entry may declare `scope: project | global` in its frontmatter.
